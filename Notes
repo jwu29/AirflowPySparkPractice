@@ -1,0 +1,192 @@
+Docker Airflow Setup
+
+https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html
+
+Fetching docker-compose.yaml
+curl -LfO 'https://airflow.apache.org/docs/apache-airflow/2.6.1/docker-compose.yaml'
+
+For personal use, convert 
+AIRFLOW__CORE__EXECUTOR: “CeleryExecutor” => “LocalExecutor”
+ Remove ‘redis’, ‘flower’, ‘AIRFLOW__CELERY__RESULT__BACKEND’, ‘AIRFLOW__CELERY__BROKER_URL’ 
+
+Initializing environment
+
+mkdir -p ./dags ./logs ./plugins ./config
+AIRFLOW_UID=50000
+
+Start Airflow on Local Server
+docker-compose up airflow-init
+docker-compose up -d
+
+docker ps
+(Find code of local server; most likely 0.0.0.0:8080/)
+
+Close Airflow Local Server
+docker-compose down -v
+
+
+Pyspark-----
+
+Initiate Spark session	
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appname(‘test’).getOrCreate()
+
+
+Loading Data	 
+
+df = spark.red.csv(#dir )
+
+
+Saving Data as csv	
+
+df.write.format(“csv”).save( #dir )
+
+
+Saving data (overwrite)	
+
+df.write.format(“csv”).mode(“overwrite”).save( #dir )
+
+
+Cache data - to temporarily save data for future request	
+
+df.cache()
+
+
+Collecting the cached the data	
+
+df.collect()
+
+
+PySpark dataframe to Pandas	
+
+pd_df = df.toPandas()
+
+
+Pandas dataframe to PySpark	
+
+spark_df = spark.createDataFrame(pd_df)
+
+
+Count number of rows	
+
+df.count()
+
+
+Show first 3 rows of table	
+
+df.show(3)
+
+
+Show first 3 rows of table with exclusive columns	
+
+df.select(#column).show(3)
+
+
+Cache data - to temporarily save data for future request	
+
+df.cache()
+
+
+Collecting the cached the data	
+
+df.collect()
+
+
+Column data types	
+
+df.printSchema() OR
+df.dtypes
+
+
+Remove column	
+
+df.drop(#column)
+
+
+Rename one column	
+
+df.withColumnRenamed(#old, #new)
+
+
+Rename multiple columns	
+
+name_pairs = [(#old1, #new1), (#old2, #new2)]
+	for old, new in name_pairs:
+	   df = df.withColumnRenamed(old,new)
+
+
+Summary stats	
+
+df.select([#col1, #col2]).describe().show()
+
+
+Drop all rows with any null values	
+
+df = df.na.drop()
+
+
+Drop all rows with null values in specific columns	
+
+df = df.na.drop(how=‘any’, subset=[#col1, #col2])
+
+
+Replace all null values in specific columns	
+
+df = df.na.fill(value=‘?’, subset=[#col1, #col2])
+
+
+Filter dataset with one condition	
+
+df.where(df[‘age’] > 18)
+
+
+Filter dataset with multiple conditions (AND)	
+
+df.where((df[‘age’] > 18) & (df[‘Gender’] == M))
+
+
+Filter dataset with multiple conditions (OR)	
+
+df.where((df[‘age’] > 18) | (df[‘Gender’] == M))
+
+
+Filter dataset with multiple conditions (NOT)	
+
+df.filter(~(df[‘age’] > 18))
+
+
+Group by column	
+
+df.groupby(#col)
+
+
+Sort by descending order	
+
+from pyspark.sql.functions import desc
+df.orderBy(desc(#col))
+
+
+Apply function with table column
+
+from pyspark.sql.functions import expr
+	exp = ‘age + 0.2 * AgeFixed’
+	df.withColumn(‘new_col’, expr(exp)
+
+
+Feature Vector	
+
+XCols =. [#col1, #col2]
+	from pyspark.ml.feature import VectorAssembler
+	v_asmblr = VectorAssembler(inputCols=XCols, outputCol=‘Fvec’)
+	df = v_asmblr.transform(df)
+
+
+Linear Regression with feature vector	
+
+from pyspark.ml.regression import LinearRegression
+	model = LinearRegression(featuresCol=‘Fvec’), labelCol= ‘MaxHR')
+	model = model.fit(trainset)
+	print(model.coefficients)
+	print(model.intercept)
+	model.evaluate(testset).predictions
